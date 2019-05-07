@@ -1,3 +1,3 @@
 # SoundServer
-Pygame Sound Server 
-IN PROGRESS
+Pygame Sound Server for video game
+
