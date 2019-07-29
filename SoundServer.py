@@ -8,13 +8,10 @@
  """
 
 __author__ = "Yoann Berenguer"
-__copyright__ = "Copyright 2007, Cobra Project"
 __credits__ = ["Yoann Berenguer"]
-__license__ = "GPL"
 __version__ = "1.0.0"
 __maintainer__ = "Yoann Berenguer"
 __email__ = "yoyoberenguer@hotmail.com"
-__status__ = "Alpha Demo"
 
 
 import pygame
