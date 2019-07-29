@@ -163,15 +163,16 @@ class SoundControl:
                     list.append(obj)
         return list
 
-    def stop(self, list_: list=[]):
+    def stop(self, list_: list=[])-> None:
         """ stop sound(s) from a given list of channel(s).
             Only sound with priority level 0 on the given channel will be stopped.
          """
-        for ch in list_:
-            l = ch - self.start
-            if self.snd_obj[l] is not None:
-                if self.snd_obj[l].priority == 0:
-                    self.channels[l].stop()
+        if list_
+            for ch in list_:
+                lch = ch - self.start
+                obj = self.snd_obj[lch]
+                if hasattr(obj, 'priority') and obj.priority == 0:
+                    self.channels[lch].stop()
         self.update()
 
     def stop_all_except(self, exception=None):
@@ -351,7 +352,11 @@ class SoundControl:
             return 0, 1
 
         else:
-            right_volume = float(x_) / SoundControl.SCREENRECT.w
+            if SoundControl.SCREENRECT.w != 0:
+                right_volume = float(x_) / SoundControl.SCREENRECT.w
+            else:
+                right_volume = 0.5
+                
             left_volume = 1 - right_volume
             return left_volume, right_volume
 
