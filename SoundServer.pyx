@@ -22,10 +22,6 @@ cdef struct stereo:
    float left;
    float right;
 
-if not mixer.get_init():
-    mixer.pre_init(44100, 16, 2, 4096)
-    pygame.init()
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -230,6 +226,7 @@ cdef class SoundControl(object):
                 l = c - start
                 if <object>PyList_GetItem(snd_obj, l):
                     if snd_obj[l].priority == 0:
+                        channels[l].set_volume(0.0, 0.0)
                         channels[l].stop()
         self.update()
 
@@ -258,6 +255,7 @@ cdef class SoundControl(object):
             snd_object = <object>PyList_GetItem(snd_obj, l)  # snd_obj[l]
             if snd_object:
                 if snd_object.obj_id not in exception:
+                    channels[l].set_volume(0.0)
                     channels[l].stop()
         self.update()
 
@@ -273,6 +271,7 @@ cdef class SoundControl(object):
             l = c - start
             snd_object = <object>PyList_GetItem(snd_obj, l)  # snd_obj[l]
             if snd_object:
+                channels[l].set_volume(0.0)
                 channels[l].stop()
         self.update()
 
@@ -290,6 +289,7 @@ cdef class SoundControl(object):
         for sound in self.snd_obj:
             if sound and sound.name == name_:
                 try:
+                    channels[sound.active_channel - start].set_volume(0.0)
                     channels[sound.active_channel - start].stop()
                 except IndexError:
                     # IGNORE ERROR
@@ -305,6 +305,7 @@ cdef class SoundControl(object):
         for sound in self.snd_obj:
             if sound and sound.obj_id == object_id:
                 try:
+                    channels[sound.active_channel - start].set_volume(0.0)
                     channels[sound.active_channel - start].stop()
                 except IndexError:
                     # IGNORE ERROR
@@ -376,18 +377,20 @@ cdef class SoundControl(object):
         return self.snd_obj
 
     cpdef play(self, sound_, int loop_, int priority_=0, float volume_=1.0,
-             float fade_out_ms=0.0, bint panning_=False, name_=None,
-             x_=None, object_id_=None):
+               float fade_in_ms=100.0, float fade_out_ms=100.0, bint panning_=False, name_=None,
+               x_=None, object_id_=None):
 
         """
         PLAY A SOUND OBJECT ON THE GIVEN CHANNEL 
         RETURN NONE IF ALL CHANNELS ARE BUSY OR IF AN EXCEPTION IS RAISED
         
+    
         :param sound_       : pygame mixer sound 
         :param loop_        : loop the sound indefinitely -1
         :param priority_    : Set the sound priority (low : 0, med : 1, high : 2)
         :param volume_      : Set the sound volume 0.0 to 1.0 (100% full volume)
-        :param fade_out_ms  : Fade out sound effect in ms
+        :param fade_in_ms   : Fade in sound effect in ms
+        :param fade_out_ms  : float; Fade out sound effect in ms 
         :param panning_     : boolean for using panning method (stereo mode)
         :param name_        : String representing the sound name
         :param x_           : Sound position for stereo mode,
@@ -422,6 +425,16 @@ cdef class SoundControl(object):
             # CHECK IF CURRENT CHANNEL IS BUSY
             if channels[l].get_busy() == 0:
 
+                # PLAY A SOUND IN STEREO MODE
+                if panning_:
+                    st = self.stereo_panning(x_, self.screen_size.w)
+                    channels[l].set_volume(st.left * volume_, st.right * volume_)
+
+                else:
+                    # IF THE CHANNEL IS PLAYING A SOUND ON WHICH SET_VOLUME() HAS ALSO BEEN CALLED,
+                    # BOTH CALLS ARE TAKEN INTO ACCOUNT.
+                    channels[l].set_volume(volume_)
+
                 # PLAY A SOUND ON A SPECIFIC CHANNEL
                 # PLAY(SOUND, LOOPS=0, MAXTIME=0, FADE_MS=0) -> NONE
                 # THIS WILL BEGIN PLAYBACK OF A SOUND ON A SPECIFIC CHANNEL.
@@ -436,6 +449,7 @@ cdef class SoundControl(object):
                 # THE SOUND AFTER A GIVEN NUMBER OF MILLISECONDS.
                 #
                 # AS IN SOUND.PLAY(), THE FADE_MS ARGUMENT CAN BE USED FADE IN THE SOUND.
+                channels[l].fadeout(<int>fade_out_ms)
                 channels[l].play(sound_, loops=loop_, maxtime=0, fade_ms=<int>fade_out_ms)
 
                 # SET THE VOLUME (LOUDNESS) OF A PLAYING SOUND.
@@ -447,14 +461,7 @@ cdef class SoundControl(object):
                 # WILL BE THE VOLUME OF THE RIGHT SPEAKER. (IF THE SECOND ARGUMENT IS NONE,
                 # THE FIRST ARGUMENT WILL BE THE VOLUME OF BOTH SPEAKERS.)
 
-                # PLAY A SOUND IN STEREO MODE
-                if panning_:
-                    st = self.stereo_panning(x_, self.screen_size.w)
-                    channels[l].set_volume(st.left, st.right)
-                else:
-                    # IF THE CHANNEL IS PLAYING A SOUND ON WHICH SET_VOLUME() HAS ALSO BEEN CALLED,
-                    # BOTH CALLS ARE TAKEN INTO ACCOUNT.
-                    channels[l].set_volume(volume_)
+
 
                 self.snd_obj[l] = SoundObject(sound_, priority_, name_, channel, object_id_)
 
@@ -495,7 +502,7 @@ cdef class SoundControl(object):
         STEREO MODE 
         
         :param screen_width: display width 
-        :param x_: integer; x value of sprite position on screen  
+        :param x_          : integer; x value of sprite position on screen  
         :return: tuple of float; 
         """
         cdef:
@@ -509,9 +516,8 @@ cdef class SoundControl(object):
             return st
 
         right_volume = float(x_) / <float>screen_width
-        left_volume = 1.0 - right_volume
+        left_volume =  1.0 - right_volume
 
         st.left  = left_volume
         st.right = right_volume
         return st
-
