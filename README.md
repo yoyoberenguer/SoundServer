@@ -5,9 +5,7 @@ This library control sound effects for your video game.
 No need to control every single sound played in your game,  pass the sound to the Sound controller and apply
 transformation to all at once or to specific sound(s).
 It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause and resume and tools 
-to locate specific sound(s).
-
-sound that needs adjusting.
+to locate specific sound(s) that needs adjusting.
 
 
 ## How to initialized the Sound Controller
