@@ -120,6 +120,12 @@ if FRAME == 400:
 
 ## Stop soud(s) various methods
 ```
+Methods : stop, stop_all_excep, stop_all, stop_name, stop_object
+```
+
+## Searching for a specific sound 
+```
+Methods : get_identical_sounds, get_identical_id
 ```
 
 ## Updating the pool
