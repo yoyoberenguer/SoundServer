@@ -1,5 +1,11 @@
 # encoding: utf-8
 
+# TODO BUGS
+# TODO  object_.time goes < 0 if the sound is looped
+
+
+__version__ = "1.0.1"
+
 
 try:
     import pygame
@@ -14,98 +20,387 @@ from time import time
 
 class SoundObject:
 
-    def __init__(self, sound_, priority_, name_, channel_, obj_id_):
+    def __init__(self, sound_, priority_: int, name_: str,
+                 channel_: int, obj_id_: int, position_: int, loop_: bool = False):
         """
         CREATE A SOUND OBJECT CONTAINING CERTAIN ATTRIBUTES (SEE THE
         COMPLETE LIST BELOW)
 
         :param sound_   : Sound object; Sound object to play
         :param priority_: integer; Sound width in seconds
-        :param name_    : string; Sound given name
+        :param name_    : string; Sound given name (if the object has no name -> str(id(sound_))
         :param channel_ : integer; Channel to use
         :param obj_id_  : python int (C long long int); Sound unique ID
+        :param position_: integer | None ; Sound position for panning sound in stereo.
+                          position must be within range [0...Max display width]
+        :param loop_    : bool; Return True if the sound is looping (default False)
         """
+        self.sound          = sound_                                 # sound object to play
+        self.length         = sound_.get_length()                    # return the length of this sound in seconds
+        self.priority       = priority_ if 0 < priority_ < 2 else 0  # sound priority - lowest to highest (0 - 2)
+        self.time           = time()                                 # timestamp
+        self.name           = name_                                  # sound name for identification
+        self.active_channel = channel_                               # channel used
+        self.obj_id         = obj_id_                                # unique sound id number
+        self.id             = id(self)                               # class id
 
-        # SOUND OBJECT TO PLAY
-        self.sound = sound_
-        # RETURN THE LENGTH OF THIS SOUND IN SECONDS
-        self.length = sound_.get_length()
-        # SOUND PRIORITY - LOWEST TO HIGHEST (0 - 2)
-        self.priority = priority_ if 0 < priority_ < 2 else 0
-        # TIMESTAMP
-        self.time = time()
-        # SOUND NAME FOR IDENTIFICATION
-        self.name = name_
-        # CHANNEL USED
-        self.active_channel = channel_
-        # UNIQUE SOUND ID NUMBER
-        self.obj_id = obj_id_
-        # CLASS ID
-        self.id = id(self)
+        # NOTE : new attribute 27/11/2020
+        # sound position for panning sound on stereo
+        # loop is true when the sound is looped indefinitely on the channel
+        self.pos            = position_                              # Sound position for panning method
+        self.loop           = loop_                                  # Bool True if the sound is loop
 
 
 class SoundControl(object):
 
-    def __init__(self, screen_size_, channel_num_=8):
+    def __init__(self, screen_size_, channels_: int = 8):
+        """
 
-        # CHANNEL TO INIT
-        self.channel_num = channel_num_
-        # GET THE TOTAL NUMBER OF PLAYBACK CHANNELS
-        # FIRST CHANNEL
-        self.start = mixer.get_num_channels()
-        # LAST CHANNEL
-        self.end = self.channel_num + self.start
-        # SETS THE NUMBER OF AVAILABLE CHANNELS FOR THE MIXER.
-        mixer.set_num_channels(self.end)
+        :param screen_size_: pygame.Rect; Size of the active display
+        :param channels_   : integer; mumber of channels to reserved for the sound controller
+        :return            : None
+        """
 
-        # RESERVE CHANNELS FROM BEING AUTOMATICALLY USED
-        mixer.set_reserved(self.end)
+        if not isinstance(screen_size_, pygame.Rect):
+            raise ValueError("\n screen_size_ argument must be a pygame.Rect type, got %s " % type(screen_size_))
+        if not isinstance(channels_, int):
+            raise ValueError("\n channels_ argument must be a integer type, got %s " % type(channels_))
 
-        # CREATE A CHANNEL OBJECT FOR CONTROLLING PLAYBACK
-        self.channels = [mixer.Channel(j + self.start) for j in range(self.channel_num)]
+        assert channels_ >= 1, "\nArgument channel_num_ must be >=1"
 
-        # LIST OF UN-INITIALISED OBJECTS
-        self.snd_obj = [None] * self.channel_num
+        if pygame.mixer.get_init() is None:
+            raise ValueError("\nMixer has not been initialized."
+                             "\nUse pygame.mixer.init() before starting the Sound controller")
 
-        # POINTER TO THE BOTTOM OF THE STACK
-        self.channel = self.start
-
-        # CREATE A LIST WITH ALL CHANNEL NUMBER
-        self.all = list(range(self.start, self.end))
-
-        self.screen_size = screen_size_
+        self.channel_num = channels_                            # channel to init
+        self.start       = mixer.get_num_channels()             # get the total number of playback channels
+        self.end         = self.channel_num + self.start        # last channel
+        mixer.set_num_channels(self.end)                        # sets the number of available channels for the mixer.
+        mixer.set_reserved(self.end)                            # reserve channels from being automatically used
+        self.channels    = [mixer.Channel(j + self.start)
+                            for j in range(self.channel_num)]   # create a channel object for controlling playback
+        self.snd_obj     = [None] * self.channel_num            # list of un-initialised objects
+        self.channel = self.start                               # pointer to the bottom of the stack
+        self.all = list(range(self.start, self.end))            # create a list with all channel number
+        self.screen_size = screen_size_                         # size of the display (used for stereo mode)
 
     def update(self):
         """
         CLEAR THE LIST SND_OBJ WHEN THE
         CHANNEL IS NOT BUSY (SOUND PLAYED)
         """
-
         i = 0
         snd_obj = self.snd_obj
 
         for c in self.channels:
             if c:
+                # Returns True if the mixer is busy mixing any channels.
+                # If the mixer is idle then this return False.
                 if not c.get_busy():
                     snd_obj[i] = None
             i += 1
 
-    def update_volume(self, volume_=1.0):
+    # SINGLE SOUND
+    def update_sound_panning(self, new_x_: int, volume_: float, name_=None, id_=None) -> None:
+
         """
-        UPDATE ALL SOUND OBJECT TO A SPECIFIC VOLUME.
+        PANNING IS THE DISTRIBUTION OF A SOUND SIGNAL INTO A NEW STEREO OR MULTI-CHANNEL SOUND FIELD
+        CHANGE PANNING FOR ALL SOUNDS BEING PLAYED ON THE MIXER.
+
+        ADJUST THE PANNING OF A GIVEN SOUND (FOUND THE SOUND OBJECT WITH AN EXPLICIT NAME OR ID).
+        AT LEAST ONE SEARCH METHOD MUST BE DEFINED.
+
+        :param new_x_  : integer; new sound position in the display. Value must be in range [0, Max width]
+        :param volume_ : float; Sound volume (adjust all sound being played by the mixer)
+                         value must be in range [0 ... 1.0]
+        :param name_   : string; Given sound name (name given at the time eof the SoundObject construction)
+        :param id_     : int | None; Default None. ID number such as object_id_ = id(sound_).
+        :return        : None
+
+        """
+        assert 0 <= new_x_ <= self.screen_size.w, \
+            "\nArgument new_x_ value must be in range (0, %s) got %s" % (self.screen_size.w, new_x_)
+
+        # SET THE VOLUME IN CASE OF AN INPUT ERROR
+        if 0.0 >= volume_ >= 1.0:
+            volume_ = 1.0
+
+        if name_ is None and id_ is None:
+            raise ValueError("\nInvalid function call, at least one argument must be set!")
+
+        # search by name take precedence (if name value is not undefined)
+        if name_ is not None:
+            id_ = None
+
+        # Calculate the sound panning, left & right volume values
+        left, right = self.stereo_panning(new_x_, self.screen_size.w)
+        left *= volume_
+        right *= volume_
+
+        channels = self.channels  # Fetch all the channels from the sound controller
+
+        for obj in self.snd_obj:  # Iterate all the SoundObject
+            if obj:
+                if hasattr(obj, "pos") and obj.pos is not None:
+                    # search by name
+                    if name_ is not None:
+
+                        if hasattr(obj, 'name') and hasattr(obj, 'active_channel'):
+                            if obj.name == name_:
+                                c = obj.active_channel  # Channel playing the sound
+                                obj.pos = new_x_        # update the sound position
+                                try:
+                                    channel = channels[c]
+                                    if hasattr(channel, 'set_volume'):
+                                        channel.set_volume(left, right)  # set the panning for the channel
+                                    else:
+                                        raise AttributeError("\nObject is missing attribute set_volume")
+                                except IndexError as e:
+                                    raise IndexError("\n %s " % e)
+                            else:
+                                continue
+                        else:
+                            raise IndexError(
+                                "\nSoundObject is missing attribute(s), "
+                                "obj must be a SoundObject type got %s " % type(obj))
+
+                    # search by id
+                    elif id_ is not None:
+                        if hasattr(obj, 'obj_id') and hasattr(obj, 'active_channel'):
+                            if obj.obj_id == id_:
+                                c = obj.active_channel  # Channel playing the sound
+                                obj.pos = new_x_        # update the sound position
+                                try:
+                                    channel = channels[c]
+                                    if hasattr(channel, 'set_volume'):
+                                        channel.set_volume(left, right)  # set the panning for the channel
+                                    else:
+                                        raise AttributeError("\nObject is missing attribute set_volume")
+                                except IndexError as e:
+                                    raise IndexError("\n %s " % e)
+                            else:
+                                continue
+                    else:
+                        print('\nFunction call error, at least one search method must'
+                              ' be set (search by name or search by id')
+                        return
+
+    # ALL SOUNDS
+    def update_sounds_panning(self, new_x_: int, volume_: float) -> None:
+        """
+        PANNING IS THE DISTRIBUTION OF A SOUND SIGNAL INTO A NEW STEREO OR MULTI-CHANNEL SOUND FIELD
+        CHANGE PANNING FOR ALL SOUNDS BEING PLAYED ON THE MIXER.
+
+        THIS METHOD ITERATE OVER ALL SOUNDS BEING PLAYED BY THE MIXER AND ADJUST THE PANNING ACCORDING
+        TO THE NEW POSITION new_x_ AND GIVEN VOLUME_
+
+        :param new_x_  : integer; new sound position in the display. Value must be in range [0, Max width]
+        :param volume_ : float; Sound volume (adjust all sound being played by the mixer)
+                         value must be in range [0 ... 1.0]
+        :return        : None
+
+        """
+        assert 0 <= new_x_ <= self.screen_size.w, \
+            "\nArgument new_x_ value must be in range (0, %s) got %s" % (self.screen_size.w, new_x_)
+
+        # SET THE VOLUME IN CASE OF AN INPUT ERROR
+        if 0.0 >= volume_ >= 1.0:
+            volume_ = 1.0
+
+        # Calculate the sound panning, left & right volume values
+        left, right = self.stereo_panning(new_x_, self.screen_size.w)
+        left  *= volume_
+        right *= volume_
+
+        channels = self.channels    # Fetch all the channels from the sound controller
+
+        for obj in self.snd_obj:    # Iterate all the SoundObject
+            if obj:
+                if hasattr(obj, "pos") and obj.pos is not None:
+                    if hasattr(obj, 'active_channel'):
+                        c = obj.active_channel                # Channel playing the sound
+                        obj.pos = new_x_                      # update the sound position
+                        try:
+                            c = channels[c]
+                            if hasattr(c, "set_volume"):
+                                c.set_volume(left, right)   # set the panning for the channel
+                            else:
+                                raise AttributeError('\nObject is missing attributes set_volume')
+                        except IndexError as e:
+                            raise IndexError("\n %s " % e)
+                    else:
+                        raise AttributeError(
+                            "\nSoundObject is missing attribute(s), "
+                            "obj must be a SoundObject type got %s " % type(obj))
+
+    def update_volume(self, volume_: float = 1.0) -> None:
+        """
+        UPDATE ALL SOUND OBJECT VOLUME TO A SPECIFIC VALUE.
         THIS HAS IMMEDIATE EFFECT AND DO NOT FADE THE SOUND
 
+        AFFECT ALL SOUNDS WITH OR WITHOUT PANNING EFFECT.
+        PANNING SOUND EFFECT WILL BE CONSERVED AFTER ADJUSTING THE VOLUME
+
         :param volume_: float; volume value, default is 1.0
-        :return: None
+        :return       : None
         """
         # SET THE VOLUME IN CASE OF AN INPUT ERROR
         if 0.0 >= volume_ >= 1.0:
             volume_ = 1.0
-        # SET THE VOLUME FOR ALL SOUNDS
-        for c in self.channels:
-            c.set_volume(volume_)
 
-    def show_free_channels(self):
+        objs = self.snd_obj
+        i = 0
+        # SET THE VOLUME FOR ALL SOUNDS
+        for channel in self.channels:
+
+            try:
+                single_obj = objs[i]
+            except IndexError as e:
+                raise IndexError("\n %s " % e)
+
+            if single_obj is not None:
+
+                # WITH PANNING
+                if hasattr(single_obj, "pos") and single_obj.pos is not None:
+                    if hasattr(channel, "set_volume"):
+                        # Calculate the sound panning, left & right volume values
+                        left, right = self.stereo_panning(single_obj.pos, self.screen_size.w)
+                        left *= volume_
+                        right *= volume_
+                        channel.set_volume(left, right)
+
+                # WITHOUT PANNING
+                else:
+                    if single_obj is not None:
+                        if hasattr(single_obj.sound, "set_volume"):
+                            single_obj.sound.set_volume(volume_)
+
+            i += 1
+
+    def pause_sound(self, name_: str = None, id_=None) -> None:
+        """
+        PAUSE A SINGLE SOUND FROM THE MIXER (AT LEAST ONE SEARCH ELEMENT HAS TO BE PROVIDED NAME OR ID)
+
+        :param name_   : string | None; Given sound name (name given at the time eof the SoundObject construction)
+        :param id_     : int | None; Default None. ID number such as object_id_ = id(sound_).
+        :return        : None
+        """
+        if name_ is None and id_ is None:
+            raise ValueError("\nInvalid function call, at least one argument must be set!")
+        # search by name take precedence (if name value is not undefined)
+        if name_ is not None:
+            id_ = None
+
+        objs = self.snd_obj
+        i = 0
+        # SET THE VOLUME FOR ALL SOUNDS
+        for channel in self.channels:
+            if hasattr(channel, "pause"):
+                try:
+                    single_obj = objs[i]
+                except IndexError as e:
+                    raise IndexError("\n %s " % e)
+
+                if single_obj is not None:
+
+                    # search by name
+                    if name_ is not None:
+                        if single_obj.name == name_:
+                            channel.pause()
+
+                    # search by id_
+                    elif id_ is not None:
+                        if single_obj.obj_id == id_:
+                            channel.pause()
+
+            i += 1
+        ...
+
+    def pause_sounds(self) -> None:
+        """
+        PAUSE ALL SOUND OBJECTS (THIS HAS IMMEDIATE EFFECT)
+
+        :return       : None
+        """
+
+        objs = self.snd_obj
+        i = 0
+        # SET THE VOLUME FOR ALL SOUNDS
+        for channel in self.channels:
+
+            try:
+                single_obj = objs[i]
+            except IndexError as e:
+                raise IndexError("\n %s " % e)
+
+            if single_obj is not None:
+
+                if hasattr(channel, "pause"):
+                    channel.pause()
+            i += 1
+
+    def unpause_sounds(self) -> None:
+        """
+        UNPAUSE ALL SOUND OBJECTS (THIS HAS IMMEDIATE EFFECT)
+
+        :return       : None
+        """
+
+        objs = self.snd_obj
+        i = 0
+
+        for channel in self.channels:
+
+            try:
+                single_obj = objs[i]
+            except IndexError as e:
+                raise IndexError("\n %s " % e)
+
+            if single_obj is not None:
+                if hasattr(channel, "unpause"):
+                    channel.unpause()
+            i += 1
+
+    def unpause_sound(self, name_: str = None, id_=None) -> None:
+        """
+        UNPAUSE A SINGLE SOUND FROM THE MIXER (AT LEAST ONE SEARCH ELEMENT HAS TO BE PROVIDED NAME OR ID)
+
+        :param name_   : string | None; Given sound name (name given at the time eof the SoundObject construction)
+        :param id_     : int | None; Default None. ID number such as object_id_ = id(sound_).
+        :return        : None
+        """
+
+        if name_ is None and id_ is None:
+            raise ValueError("\nInvalid function call, at least one argument must be set!")
+
+        # search by name take precedence (if name value is not undefined)
+        if name_ is not None:
+            id_ = None
+
+        objs = self.snd_obj
+        i = 0
+
+        for channel in self.channels:
+
+            try:
+                single_obj = objs[i]
+            except IndexError as e:
+                raise IndexError("\n %s " % e)
+
+            if single_obj is not None:
+                # search by name
+                if name_ is not None:
+                    if single_obj.name == name_:
+                        channel.unpause()
+
+                # search by id_
+                elif id_ is not None:
+                    if single_obj.obj_id == id_:
+                        channel.unpause()
+
+            i += 1
+
+    def show_free_channels(self) -> list:
         """
         RETURN A LIST OF FREE CHANNELS (NUMERICAL VALUES).
         :return: list; RETURN A LIST
@@ -120,6 +415,7 @@ class SoundControl(object):
             if not c.get_busy():
                 free_channels_append(i + start)
             i += 1
+        print("Free channels : %s " % free_channels)
 
         return free_channels
 
@@ -127,44 +423,50 @@ class SoundControl(object):
         """
         DISPLAY ALL SOUNDS OBJECTS
         """
-        i = 0
-        snd_obj = self.snd_obj
-
         j = 0
         for object_ in self.snd_obj:
             if object_:
-                print('\nName %s  id %s priority %s  channel %s width %s time left %s ' %
-                      (object_.name, object_.priority, object_.active_channel, round(object_.length),
-                 round(snd_obj.length - (time() - snd_obj.time))))
+                # TODO object_.time value is < 0 if the sound object is played in loop
+                timeleft = round(object_.length - (time() - object_.time), 2)
+                # if timeleft < 0, most likely to be a sound with attribute loop enabled
+                if timeleft < 0.0:
+                    timeleft = 0.0
+                print('Name %s priority %s  channel %s length(s) %s time left(s) %s' %
+                      (object_.name, object_.priority, object_.active_channel, round(object_.length, 2),
+                       timeleft))
+
             j += 1
 
-    def get_identical_sounds(self, sound):
+    def get_identical_sounds(self, sound_: pygame.mixer.Sound) -> list:
         """
         RETURN A LIST OF CHANNEL(S) PLAYING IDENTICAL SOUND OBJECT(s)
+        SEARCH BY IDENTICAL PYGAME.SOUND OBJECT
 
-        :param sound: Mixer object; Object to compare to
-        :return: python list; List containing channels number
-        playing similar sound object
+        :param sound_ : Mixer object; Object to compare to
+        :return      : python list; List containing channels number playing similar sound object,
+                       if no match is found, return an empty list
         """
-
+        assert isinstance(sound_, pygame.mixer.Sound), \
+            "\nPositional argument sound_ must be a pygame.mixer.Sound type, got %s " % type(sound_)
         duplicate = []
         duplicate_append = duplicate.append
 
         for obj in self.snd_obj:
             if obj:
-                if obj.sound == sound:
+                if obj.sound == sound_:
                     duplicate_append(obj.active_channel)
         return duplicate
 
-    def get_identical_id(self, id_):
+    def get_identical_id(self, id_: int) -> list:
         """
         RETURN A LIST CONTAINING ANY IDENTICAL SOUND BEING MIXED.
         USE THE UNIQUE ID FOR REFERENCING OBJECTS
 
         :param id_: python integer; unique id number that reference a sound object
-        :return: list; Return a list of channels containing identical sound object
+        :return   : list; Return a list of channels containing identical sound object
         """
-
+        assert isinstance(id_, int), \
+            "\nPositional argument id_ must be an int type, got %s " % type(id_)
         duplicate = []
         duplicate_append = duplicate.append
 
@@ -174,15 +476,16 @@ class SoundControl(object):
                     duplicate_append(obj)
         return duplicate
 
-    def stop(self, stop_list):
+    def stop(self, stop_list: list):
         """
         STOP ALL SOUND BEING PLAYED ON THE GIVEN LIST OF CHANNELS.
         ONLY SOUND WITH PRIORITY LEVEL 0 CAN BE STOPPED.
 
         :param stop_list: python list; list of channels
-        :return: None
+        :return         : None
         """
-
+        assert isinstance(stop_list, list), \
+            "\nPositional argument stop_list must be a python list type, got %s " % type(stop_list)
         start = self.start
         snd_obj = self.snd_obj
         channels = self.channels
@@ -195,21 +498,18 @@ class SoundControl(object):
                         channels[l].stop()
         self.update()
 
-    def stop_all_except(self, exception=None):
+    def stop_all_except(self, exception_: list):
         """
         STOP ALL SOUND OBJECT EXCEPT SOUNDS FROM A GIVEN LIST OF ID(SOUND)
         IT WILL STOP SOUND PLAYING ON ALL CHANNELS REGARDLESS
         OF THEIR PRIORITY.
 
-        :exception: Can be a single pygame.Sound id value or a list containing
-        all pygame.Sound object id numbers.
+        :param exception_: Can be a single pygame.Sound id value or a list containing
+                           all pygame.Sound object id numbers.
         """
-        # EXCEPTION MUST BE DEFINED
-        assert exception is None, "\nArgument exception is not defined."
 
-        if not isinstance(exception, list):
-            exception = [exception]
-
+        assert isinstance(exception_, list),\
+            "\nPositional argument exception_ must be a python list type, got %s " % type(exception_)
 
         start = self.start
         snd_obj = self.snd_obj
@@ -219,13 +519,17 @@ class SoundControl(object):
             l = c - start
             snd_object = snd_obj[l]
             if snd_object:
-                if snd_object.obj_id not in exception:
+                if snd_object.obj_id not in exception_:
                     channels[l].set_volume(0.0)
                     channels[l].stop()
         self.update()
 
     def stop_all(self):
-        """ STOP ALL SOUNDS NO EXCEPTIONS."""
+        """
+        STOP ALL SOUNDS NO EXCEPTIONS.
+
+        :return: None
+        """
 
         start = self.start
         snd_obj = self.snd_obj
@@ -239,13 +543,14 @@ class SoundControl(object):
                 channels[l].stop()
         self.update()
 
-    def stop_name(self, name_):
+    def stop_name(self, name_: str = ""):
         """
         STOP A PYGAME.SOUND OBJECT IF PLAYING ON ANY OF THE CHANNELS.
-        NAME_ REFER TO THE NAME GIVEN TO THE SOUND WHEN INSTANTIATED (E.G 'WHOOSH' NAME BELOW)
-        GL.MIXER_PLAYER.PLAY(SOUND_=WHOOSH, LOOP_=FALSE, PRIORITY_=0, VOLUME_=GL.SOUND_LEVEL,
-                FADE_OUT_MS=0, PANNING_=FALSE, NAME_='WHOOSH', X_=0)
+        :param name_: string; Sound name to stop
+        :return     :  None
         """
+        assert isinstance(name_, str),\
+            "\nPositional argument name_ must be a python string type, got %s " % type(name_)
         channels = self.channels
         start = self.start
 
@@ -259,8 +564,15 @@ class SoundControl(object):
                     ...
         self.update()
 
-    def stop_object(self, object_id):
-        """ STOP A GIVEN SOUND USING THE PYGAME.SOUND OBJECT ID NUMBER. """
+    def stop_object(self, object_id: int):
+        """
+        STOP A GIVEN SOUND USING THE PYGAME.SOUND OBJECT ID NUMBER.
+
+        :param object_id: integer; Object unique identifier such as id(sound)
+        :return         : None
+        """
+        assert isinstance(object_id, int), \
+            "\nPositional argument object_id must be a python string type, got %s " % type(object_id)
 
         channels = self.channels
         start = self.start
@@ -276,20 +588,29 @@ class SoundControl(object):
 
         self.update()
 
-    def show_time_left(self, object_id):
+    def return_time_left(self, object_id) -> float:
         """
-        RETURN THE TIME LEFT
+        RETURN THE TIME LEFT IN SECONDS (RETURN -1 IF SOUND IS SEAMLESS LOOPED ON THE CHANNEL,
+        AND NONE WHEN SOUND IS NOT FOUND
+
         :param object_id: python integer; unique object id
-        :return: a float representing the time left in seconds.
+        :return         : float | None; Return a float representing the time left in seconds.
         """
         j = 0
         snd_obj = self.snd_obj
         for obj in snd_obj:
             if obj:
                 if obj.obj_id == object_id:
-                    return round(snd_obj[j].length - (time() - snd_obj[j].time))
+                    timeleft = round(snd_obj[j].length - (time() - snd_obj[j].time), 2)
+                    # if timeleft < 0, most likely to be a sound with attribute loop enabled
+                    if timeleft < 0.0:
+                        if obj.loop:
+                            return -1.0
+                    else:
+                        timeleft = 0.0
+                    return timeleft
             j += 1
-        return 0.0
+        return None
 
     def get_reserved_channels(self):
         """ RETURN THE NUMBER OF RESERVED CHANNELS """
@@ -338,8 +659,8 @@ class SoundControl(object):
         """ RETURN ALL SOUND OBJECTS """
         return self.snd_obj
 
-    def play(self, sound_, loop_, priority_=0, volume_=1.0,
-             fade_in_ms=100.0, fade_out_ms=100.0, panning_=False, name_=None,
+    def play(self, sound_, loop_=0, priority_=0, volume_=1.0,
+             fade_in_ms=100, fade_out_ms=100, panning_=False, name_=None,
              x_=None, object_id_=None):
 
         """
@@ -348,13 +669,13 @@ class SoundControl(object):
 
 
         :param sound_       : pygame mixer sound
-        :param loop_        : loop the sound indefinitely -1
+        :param loop_        : loop the sound indefinitely -1 (default = 0)
         :param priority_    : Set the sound priority (low : 0, med : 1, high : 2)
         :param volume_      : Set the sound volume 0.0 to 1.0 (100% full volume)
         :param fade_in_ms   : Fade in sound effect in ms
         :param fade_out_ms  : float; Fade out sound effect in ms
         :param panning_     : boolean for using panning method (stereo mode)
-        :param name_        : String representing the sound name
+        :param name_        : String representing the sound name (if no name default is -> str(id(sound_)))
         :param x_           : Sound position for stereo mode,
         :param object_id_   : unique sound id
         """
@@ -371,14 +692,23 @@ class SoundControl(object):
 
         try:
             if not sound_:
-                raise AttributeError('\nArgument sound_ cannot be None')
+                raise AttributeError('\nIncorrect call argument, sound_ cannot be None')
 
-            if x_ is None or (0 > x_ > screen_width):
-                x_ = screen_width >> 1
+            if panning_:
+                # panning mode is enable but sound position value is not correct
+                # Adjusting the value manually
+                if x_ is None or (0 > x_ > screen_width):
+                    x_ = screen_width >> 1
+            # Regardless x_ value, if passing mode is disabled the variable
+            # x_ is set to None
+            else:
+                x_ = None
 
+            # set a name by default id(sound_)
             if name_ is None:
                 name_ = str(id(sound_))
 
+            # set object id default value
             if object_id_ is None:
                 object_id_ = id(sound_)
 
@@ -396,9 +726,9 @@ class SoundControl(object):
                     channels[l].set_volume(volume_)
 
                 channels[l].fadeout(fade_out_ms)
-                channels[l].play(sound_, loops=loop_, maxtime=0, fade_ms=fade_out_ms)
+                channels[l].play(sound_, loops=loop_, maxtime=0, fade_ms=fade_in_ms)
 
-                self.snd_obj[l] = SoundObject(sound_, priority_, name_, channel, object_id_)
+                self.snd_obj[l] = SoundObject(sound_, priority_, name_, l, object_id_, position_ = x_, loop_ = loop_)
 
                 # PREPARE THE MIXER FOR THE NEXT CHANNEL
                 self.channel += 1
@@ -451,3 +781,5 @@ class SoundControl(object):
         left_volume  = 1.0 - right_volume
 
         return left_volume, right_volume
+
+
