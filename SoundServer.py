@@ -1,8 +1,5 @@
 # encoding: utf-8
 
-# TODO BUGS
-# TODO  object_.time goes < 0 if the sound is looped
-
 
 __version__ = "1.0.1"
 
@@ -21,19 +18,20 @@ from time import time
 class SoundObject:
 
     def __init__(self, sound_, priority_: int, name_: str,
-                 channel_: int, obj_id_: int, position_: int, loop_: bool = False):
+                 channel_: int, obj_id_: int, position_: int, loop_: int = False):
         """
         CREATE A SOUND OBJECT CONTAINING CERTAIN ATTRIBUTES (SEE THE
         COMPLETE LIST BELOW)
 
         :param sound_   : Sound object; Sound object to play
-        :param priority_: integer; Sound width in seconds
+        :param priority_: integer; Define the sound priority (Sound with highest priority have to be stopped with
+                          specific methods)
         :param name_    : string; Sound given name (if the object has no name -> str(id(sound_))
-        :param channel_ : integer; Channel to use
+        :param channel_ : integer; Channel to use (channel where the sound is being played by the mixer)
         :param obj_id_  : python int (C long long int); Sound unique ID
         :param position_: integer | None ; Sound position for panning sound in stereo.
                           position must be within range [0...Max display width]
-        :param loop_    : bool; Return True if the sound is looping (default False)
+        :param loop_    : int; -1 for looping the sound
         """
         self.sound          = sound_                                 # sound object to play
         self.length         = sound_.get_length()                    # return the length of this sound in seconds
@@ -46,9 +44,9 @@ class SoundObject:
 
         # NOTE : new attribute 27/11/2020
         # sound position for panning sound on stereo
-        # loop is true when the sound is looped indefinitely on the channel
+
         self.pos            = position_                              # Sound position for panning method
-        self.loop           = loop_                                  # Bool True if the sound is loop
+        self.loop           = loop_
 
 
 class SoundControl(object):
@@ -57,7 +55,7 @@ class SoundControl(object):
         """
 
         :param screen_size_: pygame.Rect; Size of the active display
-        :param channels_   : integer; mumber of channels to reserved for the sound controller
+        :param channels_   : integer; number of channels to reserved for the sound controller
         :return            : None
         """
 
@@ -86,8 +84,8 @@ class SoundControl(object):
 
     def update(self):
         """
-        CLEAR THE LIST SND_OBJ WHEN THE
-        CHANNEL IS NOT BUSY (SOUND PLAYED)
+        THIS METHOD HAS TO BE CALLED FROM THE MAIN LOOP OF YOUR PROGRAM
+        DETECT SOUNDS THAT HAVE STOPPED TO PLAY ON THE MIXER AND SET THE CHANNEL VALUE TO NONE
         """
         i = 0
         snd_obj = self.snd_obj
@@ -426,7 +424,6 @@ class SoundControl(object):
         j = 0
         for object_ in self.snd_obj:
             if object_:
-                # TODO object_.time value is < 0 if the sound object is played in loop
                 timeleft = round(object_.length - (time() - object_.time), 2)
                 # if timeleft < 0, most likely to be a sound with attribute loop enabled
                 if timeleft < 0.0:
@@ -476,21 +473,21 @@ class SoundControl(object):
                     duplicate_append(obj)
         return duplicate
 
-    def stop(self, stop_list: list):
+    def stop(self, stop_list_: list):
         """
         STOP ALL SOUND BEING PLAYED ON THE GIVEN LIST OF CHANNELS.
         ONLY SOUND WITH PRIORITY LEVEL 0 CAN BE STOPPED.
 
-        :param stop_list: python list; list of channels
+        :param stop_list_: python list; list of channels
         :return         : None
         """
-        assert isinstance(stop_list, list), \
-            "\nPositional argument stop_list must be a python list type, got %s " % type(stop_list)
+        assert isinstance(stop_list_, list), \
+            "\nPositional argument stop_list must be a python list type, got %s " % type(stop_list_)
         start = self.start
         snd_obj = self.snd_obj
         channels = self.channels
 
-        for c in stop_list:
+        for c in stop_list_:
                 l = c - start
                 if snd_obj[l]:
                     if snd_obj[l].priority == 0:
