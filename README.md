@@ -55,5 +55,36 @@ sound1 = pygame.mixer.Sound('Alarm9.ogg')
 SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400, name_="ALARM")
 SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400, object_id_=id(sound1))
 
+```
 
+## Panning audio sound
+```
+# First option (panning a single sound from the pool by passing a unique identifier to the method "update_sound_panning")
+# Use x for the new position of the sound on the display 
+# Sound volume at highest intensity 100% -> 1.0
+# Define the unique identifier with id_=id(sound1)
+x = 0
+while 1: 
+    pygame.event.pumpt()
+    SND.update_sound_panning(x, 1.0, name_="", id_=id(sound1))
+    x += 1
+    x %= 1280
+    
+# Second option, panning every sounds on the mixer (using the method update_sounds_panning)
+# Use x for the new position of the sound on the display 
+# Value 1.0 -> sound volume at highest intensity 100%
+x = 0
+while 1: 
+    pygame.event.pumpt()
+    SND.update_sounds_panning(x, 1.0)
+    x += 1
+    x %= 1280
+    
+```
+
+## Updating the pool
+```
+# It is a good practice to update the pool every frames to clear every channels when sounds finishes playing.
+# The update always take place from the main loop
+SND.update()
 ```
