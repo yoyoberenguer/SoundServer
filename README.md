@@ -83,16 +83,17 @@ while 1:
     
 ```
 
-## Pause & resume 
+## Control sound volume
+```
 ```
 
-
+## Pause & resume 
+```
 ```
 
 ## Stop soud(s) various methods
 ```
 ```
-
 
 ## Updating the pool
 ```
