@@ -83,6 +83,17 @@ while 1:
     
 ```
 
+## Pause & resume 
+```
+
+
+```
+
+## Stop soud(s) various methods
+```
+```
+
+
 ## Updating the pool
 ```
 # It is a good practice to update the pool every frames to clear every channels when sounds finishes playing.
