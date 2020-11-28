@@ -41,7 +41,7 @@ SND.play(sound1, loop_=-1, volume_=1.0, panning_=True, x_=400)  # here sound wil
 # Below an example of volume at 50% of the maximum gain
 SND.play(sound1, loop_=-1, volume_=0.5, panning_=True, x_=400)
 
-# Fade in and fade effect 
+# Fade in and fade out effect 
 # fade-out (int): This will stop playback of the sound after fading it out over the time argument in milliseconds. 
 # The Sound will fade and stop on all actively playing channels.
 # Fade-in (int) : The fade_ms argument will make the sound start playing at 0 volume and fade up to full volume over the time given. 
