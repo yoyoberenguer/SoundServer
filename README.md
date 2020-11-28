@@ -1,5 +1,14 @@
 # SoundServer
+
 Pygame Sound Server for video game
+This library control sound effects for your video game. 
+No need to control every single sound played in your game,  pass the sound to the Sound controller and apply
+transformation to all sounds at once or to specific sound(s).
+It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause and resume and tools 
+to locate specific sound(s).
+
+sound that needs adjusting.
+
 
 ## How to initialized the Sound Controller
 ```
@@ -113,6 +122,7 @@ SND.update_volume(0.75)
 # pause all sounds
 if FRAME == 200:
     SND.pause_sounds()
+    
 # resume sound with id = id(sound1)
 if FRAME == 400:
     SND.unpause_sound(id_=id(sound1))
