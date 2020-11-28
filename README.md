@@ -1,6 +1,6 @@
 # SoundServer
 
-Pygame Sound Server for video game
+Pygame Sound Server for video game.
 This library control sound effects for your video game. 
 No need to control every single sound played in your game,  pass the sound to the Sound controller and apply
 transformation to all sounds at once or to specific sound(s).
