@@ -48,6 +48,12 @@ SND.play(sound1, loop_=-1, volume_=0.5, panning_=True, x_=400)
 # The sample may end before the fade-in is complete.
 SND.play(sound1, -1, volume_=1.0, panning_=True, x_=400, fade_in_ms=200, fade_out_ms=0)
 
+# Naming convention
+# The sound controller has various method that can search for a specific sound being played on the mixer.
+# You can select a specific name or a unique identifier such as :
+sound1 = pygame.mixer.Sound('Alarm9.ogg')
+SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400, name_="ALARM")
+SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400, object_id_=id(sound1))
 
 
 ```
