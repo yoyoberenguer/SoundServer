@@ -1,10 +1,12 @@
 # SoundServer (compatible pygame 2.0)
 ```
 Pygame Sound controller for video game.
-SoundServer is a free program (coded with Python & Cython).
-It allows pygame programer to rely on an very convenient library for controlling  
-sound effects playing on the mixer using a set of methods/tools to apply transformations.
+SoundServer is a free program (coded with Python & Cython) that simplify pygamne sound scripting.
+It allows pygame programer to rely on an very convenient library to control pygame sound objects 
+using a set of methods/tools to apply local or global transformations.
 
+It is behaving like an interactive pool of sounds that can modify from anywhere in your code, 
+whenever a sound needs to be adjusted.
 It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause and resume and tools 
 to locate specific sound(s) that needs to be adjusted in your video game.
 ```
@@ -17,15 +19,16 @@ SCREENRECT = pygame.Rect(0, 0, 800, 1024)
 pygame.display.set_mode((SCREENRECT.w, SCREENRECT.h))
 
 # SCREENRECT is a pygame Rect (size of the display and used for the panning mode)
-# 8 is the channel number reserved for the server (behave like a pool of channels)
-# When the first channel is busy playing a sound effect the server use the next channel available.
+# 8 is the number of channels reserved for the server (behave like a pool of channels)
+# When the first channel is busy playing a sound effect, the server automatically select the
+# next channel available.
 
 SND = SoundControl(SCREENRECT, 8)
 ```
 
 ## Loading a sound in the Controller 
 ```
-# What is the panning mode:
+# Panning mode:
 # Panning is the distribution of a sound signal into a new stereo or multi-channel sound field
 # change panning for all sounds being played on the mixer.
 # Load a sound without panning mode (panning_ = False)
