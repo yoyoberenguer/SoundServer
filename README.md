@@ -179,7 +179,8 @@ pip install pygame cython numpy==1.19.3
   e.g https://devblogs.microsoft.com/python/unable-to-find-vcvarsall-bat/
 ```
 
-## BUILDING PROJECT:
+BUILDING PROJECT:
+=================
 ```
 In a command prompt and under the directory containing the source files
 C:\>python setup_project.py build_ext --inplace
