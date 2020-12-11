@@ -1,5 +1,5 @@
 SoundServer (compatible pygame 2.0)
-----------------------------------
+===================================
 ```
 Pygame Sound controller for video game.
 SoundServer is a free program (coded with Python & Cython) that simplify pygamne sound scripting.
@@ -180,7 +180,7 @@ pip install pygame cython numpy==1.19.3
 ```
 
 BUILDING PROJECT:
-=================
+-----------------
 ```
 In a command prompt and under the directory containing the source files
 C:\>python setup_project.py build_ext --inplace
