@@ -1,4 +1,5 @@
-# SoundServer (compatible pygame 2.0)
+SoundServer (compatible pygame 2.0)
+----------------------------------
 ```
 Pygame Sound controller for video game.
 SoundServer is a free program (coded with Python & Cython) that simplify pygamne sound scripting.
@@ -11,7 +12,8 @@ It contains methods such as panning sound effect (not included in pygame 2.0), v
 to locate specific sound(s) that needs to be adjusted in your video game.
 ```
 
-## How to initialized the Sound Controller
+How to initialized the Sound Controller
+-----------------------------------------
 ```
 pygame.mixer.init()
 sound1 = pygame.mixer.Sound('Alarm9.ogg')
@@ -26,7 +28,8 @@ pygame.display.set_mode((SCREENRECT.w, SCREENRECT.h))
 SND = SoundControl(SCREENRECT, 8)
 ```
 
-## Loading a sound in the Controller 
+Loading a sound in the Controller 
+---------------------------------
 ```
 # Panning mode:
 # Panning is the distribution of a sound signal into a new stereo or multi-channel sound field
@@ -76,7 +79,8 @@ SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400, object_id_=id(sound1))
 
 ```
 
-## Panning audio sound
+Panning audio sound
+-------------------
 ```
 # First option (panning a single sound from the pool by passing a unique identifier to the method 
 "update_sound_panning")
@@ -103,7 +107,8 @@ while 1:
     
 ```
 
-## Control sound volume
+Control sound volume
+--------------------
 ```
 # Use the method update_volume to control the volume (at once) of all the sounds being play by the mixer.
 # The effect is immediate for mono and stereo sound effect (panning sound included)
@@ -111,7 +116,8 @@ while 1:
 SND.update_volume(0.75) 
 ```
 
-## Pause & resume 
+Pause & resume 
+--------------
 ```
 # PAUSE
 # Method pause_sound to pause a single sound effect
@@ -132,26 +138,31 @@ if FRAME == 400:
     SND.unpause_sound(id_=id(sound1))
 ```
 
-## Stop soud(s) various methods
+Stop soud(s) various methods
+----------------------------
 ```
 Methods : stop, stop_all_excep, stop_all, stop_name, stop_object
 ```
 
-## Searching for a specific sound 
+Searching for a specific sound
+------------------------------
 ```
 Methods : get_identical_sounds, get_identical_id
 ```
 
-## Updating the pool
+Updating the pool
+-----------------
 ```
 # It is a good practice to update the pool every frames to clear every channels when sounds finishes playing.
 # The update always take place from the main loop
 SND.update()
 ```
 
-# Cython code also available for better performance
+Cython code also available for better performance
+-------------------------------------------------
 
-## REQUIREMENT:
+REQUIREMENT:
+------------
 ```
 pip install pygame cython numpy==1.19.3
 
