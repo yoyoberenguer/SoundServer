@@ -1,12 +1,13 @@
 # SoundServer (compatible pygame 2.0)
+```
+Pygame Sound controller for video game.
+SoundServer is a free program  coded with Python & Cython under active development.
+It allows pygame game programer to rely on an very convenient library for controling  
+sound effects playing on the mixer using a set of methods/tools to apply transformations.
 
-Pygame Sound Server for video game.
-This library control sound effects for your video game. 
-No need to control every single sound played in your game,  pass the sound to the Sound controller and apply
-transformation to all at once or to specific sound(s).
 It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause and resume and tools 
-to locate specific sound(s) that needs adjusting.
-
+to locate specific sound(s) that needs to be adjusted in your video game.```
+```
 
 ## How to initialized the Sound Controller
 ```
