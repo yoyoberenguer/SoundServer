@@ -8,8 +8,8 @@ using a set of methods/tools to apply local or global transformations.
 
 It is behaving like an interactive pool of sounds that can be modified from anywhere in your code.
 
-It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause and resume and tools 
-to locate specific sound(s) that needs to be adjusted in your video game.
+It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause 
+and resume and tools to locate specific sound(s) that needs to be adjusted in your video game.
 ```
 
 How to initialized the Sound Controller
