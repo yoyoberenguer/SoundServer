@@ -3,13 +3,14 @@ SoundServer (compatible pygame 2.0)
 ```
 Pygame Sound controller for video game.
 SoundServer is a free program (coded with Python & Cython) that simplify pygamne sound scripting.
-It allows pygame programer to rely on an very convenient library to control pygame sound objects 
+It allows pygame programer to rely on a very convenient library to control pygame sound objects 
 using a set of methods/tools to apply local or global transformations.
 
 It is behaving like an interactive pool of sounds that can be modified from anywhere in your code.
 
-It contains methods such as panning sound effect (not included in pygame 2.0), volume control, pause 
-and resume and tools to locate specific sound(s) that needs to be adjusted in your video game.
+It contains methods such as panning sound effect (not included in pygame 2.0 sound library), 
+volume control, sound pause / resume and tools to search for a specific sound(s) that needs 
+to be adjusted in your video game.
 ```
 
 How to initialized the Sound Controller
@@ -23,7 +24,7 @@ pygame.display.set_mode((SCREENRECT.w, SCREENRECT.h))
 # SCREENRECT is a pygame Rect (size of the display and used for the panning mode)
 # 8 is the number of channels reserved for the server (behave like a pool of channels)
 # When the first channel is busy playing a sound effect, the server automatically select the
-# next channel available.
+# next channel available to load a sound effect.
 
 SND = SoundControl(SCREENRECT, 8)
 ```
@@ -34,13 +35,16 @@ Loading a sound in the Controller
 # Panning mode:
 # Panning is the distribution of a sound signal into a new stereo or multi-channel sound field
 # change panning for all sounds being played on the mixer.
-# Load a sound without panning mode (panning_ = False)
+# Load a sound without panning mode enable (panning_ = False)
 
 SND.play(sound1, 0, volume_=1.0, panning_=False)
 
 # Panning mode enabled.
-# When panning is selected you must also defined the sound location on the display (here 400 pixels), 
-# otherwise the middle of the display will be choosen by default.
+# When panning is selected you must also defined the sound location of a sprite explosion or 
+# sound effect on your screen (here 400 pixels in our example). 
+# Default location is the screen centre.
+# Please see section panning a sound for more details and explanation on how to pan a sound
+# right left and vice versa.
 
 SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400)
 
