@@ -65,7 +65,7 @@ SND.play(sound1, loop_=-1, volume_=0.5, panning_=True, x_=400)
 
 # Fade in and fade out effect 
 # fade-out (int): This will stop playback of the sound after fading it out over the time argument in 
-milliseconds. 
+# milliseconds. 
 # The Sound will fade and stop on all actively playing channels.
 # Fade-in (int) : The fade_ms argument will make the sound start playing at 0 volume and fade up to full 
 # volume over the time given. 
@@ -75,6 +75,8 @@ SND.play(sound1, -1, volume_=1.0, panning_=True, x_=400, fade_in_ms=200, fade_ou
 
 # Naming convention
 # The sound controller has various method that can search for a specific sound being played on the mixer.
+# After naming a sound object, you will be able to apply search method to find a specific sound from 
+# the queue and apply transformation to it or alter similar sound objects.
 # You can select a specific name or a unique identifier such as :
 
 sound1 = pygame.mixer.Sound('Alarm9.ogg')
@@ -159,6 +161,7 @@ Updating the pool
 ```
 # It is a good practice to update the pool every frames to clear every channels when sounds finishes playing.
 # The update always take place from the main loop
+
 SND.update()
 ```
 
