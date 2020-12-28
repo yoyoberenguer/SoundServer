@@ -87,7 +87,7 @@ SND.play(sound1, 0, volume_=1.0, panning_=True, x_=400, object_id_=id(sound1))
 
 Panning audio sound
 -------------------
-```
+```python
 # First option (panning a single sound from the pool by passing a unique identifier to the method 
 "update_sound_panning")
 # Use x for the new position of the sound on the display 
@@ -115,7 +115,7 @@ while 1:
 
 Control sound volume
 --------------------
-```
+```python
 # Use the method update_volume to control the volume (at once) of all the sounds being play by the mixer.
 # The effect is immediate for mono and stereo sound effect (panning sound included)
 
@@ -124,7 +124,7 @@ SND.update_volume(0.75)
 
 Pause & resume 
 --------------
-```
+```python
 # PAUSE
 # Method pause_sound to pause a single sound effect
 # Method pause_sounds to pause all sounds being play on the mixer
@@ -158,7 +158,7 @@ Methods : get_identical_sounds, get_identical_id
 
 Updating the pool
 -----------------
-```
+```python
 # It is a good practice to update the pool every frames to clear every channels when sounds finishes playing.
 # The update always take place from the main loop
 
