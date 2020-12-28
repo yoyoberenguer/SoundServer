@@ -15,7 +15,7 @@ to be adjusted in your video game.
 
 How to initialized the Sound Controller
 -----------------------------------------
-```
+```python
 pygame.mixer.init()
 sound1 = pygame.mixer.Sound('Alarm9.ogg')
 SCREENRECT = pygame.Rect(0, 0, 800, 1024)
@@ -31,7 +31,7 @@ SND = SoundControl(SCREENRECT, 8)
 
 Loading a sound in the Controller 
 ---------------------------------
-```
+```python
 # Panning mode:
 # Panning is the distribution of a sound signal into a new stereo or multi-channel sound field
 # change panning for all sounds being played on the mixer.
