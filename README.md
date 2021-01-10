@@ -96,7 +96,7 @@ Panning audio sound
 
 x = 0
 while 1: 
-    pygame.event.pumpt()
+    pygame.event.pump()
     SND.update_sound_panning(x, 1.0, name_="", id_=id(sound1))
     x += 1
     x %= 1280
@@ -106,7 +106,7 @@ while 1:
 # Value 1.0 -> sound volume at highest intensity 100%
 x = 0
 while 1: 
-    pygame.event.pumpt()
+    pygame.event.pump()
     SND.update_sounds_panning(x, 1.0)
     x += 1
     x %= 1280
