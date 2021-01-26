@@ -89,7 +89,7 @@ Panning audio sound
 -------------------
 ```python
 
-** The pygame mixer must be initialized in stereo mode otherwise the panning effect will be disregarded.
+# --- The pygame mixer must be initialized in stereo mode otherwise the panning effect will be disregarded. ---
 
 # First option (panning a single sound from the pool by passing a unique identifier to the method 
 # "update_sound_panning")
