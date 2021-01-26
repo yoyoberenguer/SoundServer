@@ -39,7 +39,7 @@ Loading a sound in the Controller
 
 SND.play(sound1, 0, volume_=1.0, panning_=False)
 
-# Panning mode enabled (** The pygame mixer must be initialized in stereo mode otherwise the panning effect will be disregarded)
+# Panning mode enabled (** pygame mixer must be initialized in stereo mode otherwise the panning effect will be disregarded)
 # When panning is selected you must also defined the sound location of a sprite explosion or 
 # sound effect on your screen (here 400 pixels in our example). 
 # Default location is the screen centre.
@@ -89,7 +89,7 @@ Panning audio sound
 -------------------
 ```python
 
-# --- The pygame mixer must be initialized in stereo mode otherwise the panning effect will be disregarded. ---
+# --- Pygame mixer must be initialized in stereo mode otherwise the panning effect will be disregarded. ---
 
 # First option (panning a single sound from the pool by passing a unique identifier to the method 
 # "update_sound_panning")
